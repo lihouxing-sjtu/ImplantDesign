@@ -16,7 +16,7 @@ class ImplantDesign : public QMainWindow
 public:
 	ImplantDesign(QWidget *parent = 0);
 	~ImplantDesign();
-
+	vtkSmartPointer<vtkFileOutputWindow> m_window;
 private:
 	Ui::ImplantDesignClass ui;
 

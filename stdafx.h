@@ -37,6 +37,7 @@
 #include <vtkDataSetMapper.h>
 #include <vtkEventQtSlotConnect.h>
 #include <vtkExtractSelection.h>
+#include <vtkFileOutputWindow.h>
 #include <vtkFocalPlanePointPlacer.h>
 
 #include <vtkMath.h>

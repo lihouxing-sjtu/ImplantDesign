@@ -7,6 +7,9 @@ ImplantDesign::ImplantDesign(QWidget *parent)
 	ui.setupUi(this);
 
 	this->InitializeQVTKWidget();
+	m_window = vtkSmartPointer<vtkFileOutputWindow>::New();
+	m_window->SetInstance(m_window);
+	m_window->SetFileName("a.txt");
 
 	m_ImplantBase = vtkSmartPointer<vtkPolyData>::New();
 	m_ImplantBaseActor = vtkSmartPointer<vtkActor>::New();
@@ -184,20 +187,34 @@ void ImplantDesign::FindCell(vtkIdType cellid)
 {
 
 	auto polydata = vtkSmartPointer<vtkPolyData>::New();
-	polydata = m_ModelList.first()->m_data;
-	
-	for (int i = 0; i < polydata->GetCell(cellid)->GetPointIds()->GetNumberOfIds(); i++)
+	polydata=m_ModelList.first()->m_data;
+
+	//for each point of the cell, find the neibor cell
+	auto pointsIds = vtkSmartPointer<vtkIdList>::New();
+	polydata->GetCellPoints(cellid, pointsIds);
+	polydata->BuildLinks();
+	for (int i = 0; i < pointsIds->GetNumberOfIds(); i++)
 	{
-		auto neighbors = vtkSmartPointer<vtkIdList>::New();
-		auto idlist = vtkSmartPointer<vtkIdList>::New();
-		idlist->InsertNextId(polydata->GetCell(cellid)->GetPointIds()->GetId(i));
-		polydata->GetCellNeighbors(cellid, idlist, neighbors);	
+		auto neighbors = vtkSmartPointer<vtkIdList>::New();//neibor cell list
+		if (i + 1 == pointsIds->GetNumberOfIds())
+		{
+			polydata->GetCellEdgeNeighbors(cellid, pointsIds->GetId(i), pointsIds->GetId(0), neighbors);
+		}
+		else
+		{
+			polydata->GetCellEdgeNeighbors(cellid, pointsIds->GetId(i), pointsIds->GetId(i + 1), neighbors);
+		}
+
 		for (int j = 0; j < neighbors->GetNumberOfIds(); j++)
 		{
+
+			if (cellIDList.indexOf(neighbors->GetId(j)) != -1)
+			{
+				continue;
+			}
 			double* normal = polydata->GetCellData()->GetNormals()->GetTuple(neighbors->GetId(j));
 			double dg=vtkMath::DegreesFromRadians(vtkMath::AngleBetweenVectors(normal, normalOfDirection));
-		
-			if (dg<90&&cellIDList.indexOf(neighbors->GetId(j)) == -1)
+			if (dg)
 			{
 				this->AddCellInScene(neighbors->GetId(j));
 				cellIDList.append(neighbors->GetId(j));
@@ -333,7 +350,9 @@ void ImplantDesign::OnContourChoose()
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetLineWidth(3.0);
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetColor(0.1, 0.3, 0.7);
 	m_ChooseContourWidgetRep->SetLineInterpolator(m_LineInterpolateor);
+
 	m_ChooseContourWidget->SetRepresentation(m_ChooseContourWidgetRep);
+
 	if (ui.ContourChooseButton->isChecked())
 	{
 		m_ChooseContourWidget->On();
