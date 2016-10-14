@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="ImplantDesign">
+    <file>Resources/DownloadExtension.png</file>
+    <file>Resources/AnnotationDelete.png</file>
+    <file>Resources/AnnotationInvisible.png</file>
+    <file>Resources/AnnotationVisibility.png</file>
+    <file>Resources/openproject.ico</file>
+    <file>Resources/smartguideicon.ico</file>
+  </qresource>
+</RCC>
