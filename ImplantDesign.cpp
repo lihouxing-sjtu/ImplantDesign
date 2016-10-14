@@ -185,11 +185,6 @@ void ImplantDesign::FindCell(vtkIdType cellid)
 
 	auto polydata = vtkSmartPointer<vtkPolyData>::New();
 	polydata = m_ModelList.first()->m_data;
-
-
-
-	
-
 	
 	for (int i = 0; i < polydata->GetCell(cellid)->GetPointIds()->GetNumberOfIds(); i++)
 	{
