@@ -20,8 +20,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_QCustomVTKWidget_t {
-    QByteArrayData data[7];
-    char stringdata0[80];
+    QByteArrayData data[8];
+    char stringdata0[98];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -36,12 +36,13 @@ QT_MOC_LITERAL(2, 31, 0), // ""
 QT_MOC_LITERAL(3, 32, 17), // "QCustomVTKWidget*"
 QT_MOC_LITERAL(4, 50, 12), // "rightClicked"
 QT_MOC_LITERAL(5, 63, 7), // "double*"
-QT_MOC_LITERAL(6, 71, 8) // "pickCell"
+QT_MOC_LITERAL(6, 71, 8), // "pickCell"
+QT_MOC_LITERAL(7, 80, 17) // "changeWidgetState"
 
     },
     "QCustomVTKWidget\0doubleClicked\0\0"
     "QCustomVTKWidget*\0rightClicked\0double*\0"
-    "pickCell"
+    "pickCell\0changeWidgetState"
 };
 #undef QT_MOC_LITERAL
 
@@ -51,21 +52,23 @@ static const uint qt_meta_data_QCustomVTKWidget[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       3,   14, // methods
+       4,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
-       3,       // signalCount
+       4,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   29,    2, 0x06 /* Public */,
-       4,    2,   32,    2, 0x06 /* Public */,
-       6,    0,   37,    2, 0x06 /* Public */,
+       1,    1,   34,    2, 0x06 /* Public */,
+       4,    2,   37,    2, 0x06 /* Public */,
+       6,    0,   42,    2, 0x06 /* Public */,
+       7,    0,   43,    2, 0x06 /* Public */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3,    2,
     QMetaType::Void, 0x80000000 | 3, 0x80000000 | 5,    2,    2,
+    QMetaType::Void,
     QMetaType::Void,
 
        0        // eod
@@ -80,6 +83,7 @@ void QCustomVTKWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int
         case 0: _t->doubleClicked((*reinterpret_cast< QCustomVTKWidget*(*)>(_a[1]))); break;
         case 1: _t->rightClicked((*reinterpret_cast< QCustomVTKWidget*(*)>(_a[1])),(*reinterpret_cast< double*(*)>(_a[2]))); break;
         case 2: _t->pickCell(); break;
+        case 3: _t->changeWidgetState(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -124,6 +128,13 @@ void QCustomVTKWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int
                 return;
             }
         }
+        {
+            typedef void (QCustomVTKWidget::*_t)();
+            if (*reinterpret_cast<_t *>(func) == static_cast<_t>(&QCustomVTKWidget::changeWidgetState)) {
+                *result = 3;
+                return;
+            }
+        }
     }
 }
 
@@ -152,13 +163,13 @@ int QCustomVTKWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 3)
+        if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 3;
+        _id -= 4;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 3)
+        if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 3;
+        _id -= 4;
     }
     return _id;
 }
@@ -181,5 +192,11 @@ void QCustomVTKWidget::rightClicked(QCustomVTKWidget * _t1, double * _t2)
 void QCustomVTKWidget::pickCell()
 {
     QMetaObject::activate(this, &staticMetaObject, 2, Q_NULLPTR);
+}
+
+// SIGNAL 3
+void QCustomVTKWidget::changeWidgetState()
+{
+    QMetaObject::activate(this, &staticMetaObject, 3, Q_NULLPTR);
 }
 QT_END_MOC_NAMESPACE

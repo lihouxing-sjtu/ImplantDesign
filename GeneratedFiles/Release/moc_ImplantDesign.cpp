@@ -20,8 +20,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_ImplantDesign_t {
-    QByteArrayData data[9];
-    char stringdata0[118];
+    QByteArrayData data[10];
+    char stringdata0[138];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -38,13 +38,14 @@ QT_MOC_LITERAL(4, 53, 4), // "item"
 QT_MOC_LITERAL(5, 58, 13), // "OnOpenProject"
 QT_MOC_LITERAL(6, 72, 15), // "OnContourChoose"
 QT_MOC_LITERAL(7, 88, 14), // "OnSingleChoose"
-QT_MOC_LITERAL(8, 103, 14) // "OnCloseContour"
+QT_MOC_LITERAL(8, 103, 14), // "OnCloseContour"
+QT_MOC_LITERAL(9, 118, 19) // "OnChangeWidgetState"
 
     },
     "ImplantDesign\0OnDeleteModel\0\0"
     "ModelControlWidgetItem*\0item\0OnOpenProject\0"
     "OnContourChoose\0OnSingleChoose\0"
-    "OnCloseContour"
+    "OnCloseContour\0OnChangeWidgetState"
 };
 #undef QT_MOC_LITERAL
 
@@ -54,7 +55,7 @@ static const uint qt_meta_data_ImplantDesign[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       5,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -62,14 +63,16 @@ static const uint qt_meta_data_ImplantDesign[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    1,   39,    2, 0x09 /* Protected */,
-       5,    0,   42,    2, 0x09 /* Protected */,
-       6,    0,   43,    2, 0x09 /* Protected */,
-       7,    0,   44,    2, 0x09 /* Protected */,
-       8,    0,   45,    2, 0x09 /* Protected */,
+       1,    1,   44,    2, 0x09 /* Protected */,
+       5,    0,   47,    2, 0x09 /* Protected */,
+       6,    0,   48,    2, 0x09 /* Protected */,
+       7,    0,   49,    2, 0x09 /* Protected */,
+       8,    0,   50,    2, 0x09 /* Protected */,
+       9,    0,   51,    2, 0x09 /* Protected */,
 
  // slots: parameters
     QMetaType::Void, 0x80000000 | 3,    4,
+    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -89,6 +92,7 @@ void ImplantDesign::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 2: _t->OnContourChoose(); break;
         case 3: _t->OnSingleChoose(); break;
         case 4: _t->OnCloseContour(); break;
+        case 5: _t->OnChangeWidgetState(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -130,13 +134,13 @@ int ImplantDesign::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 5)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 5;
+        _id -= 6;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 5)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 5;
+        _id -= 6;
     }
     return _id;
 }

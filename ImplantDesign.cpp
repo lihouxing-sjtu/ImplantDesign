@@ -26,8 +26,8 @@ ImplantDesign::ImplantDesign(QWidget *parent)
 	m_ChooseContourWidget = vtkSmartPointer<vtkContourWidget>::New();
 	m_ChooseContourWidget->SetInteractor(m_Interactor);
 	m_ChooseContourWidgetRep = vtkSmartPointer<vtkOrientedGlyphContourRepresentation>::New();
-	m_ContourPointPlacer = vtkSmartPointer<vtkFocalPlanePointPlacer>::New();
-	m_LineInterpolateor = vtkSmartPointer<vtkBezierContourLineInterpolator>::New();
+	m_ContourPointPlacer = vtkSmartPointer<vtkPolygonalSurfacePointPlacer>::New();
+	m_LineInterpolateor = vtkSmartPointer<vtkPolygonalSurfaceContourLineInterpolator>::New();
 	m_ChooseContourWidgetRep->SetPointPlacer(m_ContourPointPlacer);
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetLineWidth(3.0);
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetColor(0.1, 0.3, 0.7);
@@ -39,6 +39,7 @@ ImplantDesign::ImplantDesign(QWidget *parent)
 	m_Selection = vtkSmartPointer<vtkSelection>::New();
 	m_ExtractSelection = vtkSmartPointer<vtkExtractSelection>::New();
 
+	m_PointLocator = vtkSmartPointer<vtkKdTreePointLocator>::New();
 
 	m_ExtractActor = vtkSmartPointer<vtkActor>::New();
 
@@ -262,7 +263,78 @@ void ImplantDesign::InitializeQVTKWidget()
 
 void ImplantDesign::OnCloseContour()
 {
+
+	disconnect(ui.ViewWidget, SIGNAL(changeWidgetState()), this, SLOT(OnChangeWidgetState()));
 	m_ChooseContourWidget->CloseLoop();
+	auto model = vtkSmartPointer<vtkPolyData>::New();
+	model->DeepCopy(m_ModelList.first()->m_data);
+	auto temp = vtkSmartPointer<vtkPolyData>::New();
+	temp = m_ChooseContourWidgetRep->GetContourRepresentationAsPolyData();	
+	temp->BuildLinks();
+
+	QList<vtkIdType> cells2delete;
+	QList<vtkIdType> pointList;
+	for (int i = 0; i < temp->GetNumberOfPoints();i++)
+	{
+		auto cells = vtkSmartPointer<vtkIdList>::New();
+		vtkIdType pt=m_PointLocator->FindClosestPoint(temp->GetPoints()->GetPoint(i));
+		if (pointList.indexOf(pt)==-1)
+		{
+			pointList.append(pt);		
+			model->GetPointCells(pt, cells);
+			for (int j = 0; j < cells->GetNumberOfIds(); j++)
+			{
+				if (cells2delete.indexOf(cells->GetId(j)) == -1)
+				{
+					cells2delete.append(cells->GetId(j));
+					model->DeleteCell(cells->GetId(j));
+				}
+			}
+		}
+
+	}
+
+	model->RemoveDeletedCells();
+	auto pointLocator = vtkSmartPointer<vtkPointLocator>::New();
+	pointLocator->SetDataSet(model);
+	pointLocator->BuildLocator();
+
+	double center[3];
+	center[0] = m_Interactor->GetEventPosition()[0];
+	center[1] = m_Interactor->GetEventPosition()[1];
+	center[2] = 0;
+	auto worldpointpicker = vtkSmartPointer<vtkWorldPointPicker>::New();
+	worldpointpicker->Pick(center, m_Renderer);
+	worldpointpicker->GetPickPosition(center);
+	int index = pointLocator->FindClosestPoint(center);
+	auto sphere = vtkSmartPointer<vtkSphereWidget>::New();
+	sphere->SetCenter(center);
+	sphere->SetRadius(2);
+	sphere->SetInteractor(m_Interactor);
+	sphere->On();
+	auto connector = vtkSmartPointer<vtkPolyDataConnectivityFilter>::New();
+	connector->SetInputData(model);
+	connector->AddSeed(index);
+	connector->SetExtractionModeToPointSeededRegions();
+	connector->Update();
+
+	auto selectedpd = vtkSmartPointer<vtkPolyData>::New();
+	selectedpd = connector->GetOutput();
+	auto resultpd = vtkSmartPointer<vtkPolyData>::New();
+	this->SoftBoundary(selectedpd, resultpd);
+
+	vtkSmartPointer<vtkPolyDataMapper> clipMapper =
+		vtkSmartPointer<vtkPolyDataMapper>::New();
+	clipMapper->SetInputData(resultpd);
+	clipMapper->ScalarVisibilityOff();
+	vtkSmartPointer<vtkActor> clipActor =
+		vtkSmartPointer<vtkActor>::New();
+	clipActor->SetMapper(clipMapper);
+
+	m_Renderer->AddActor(clipActor);
+	m_RenderWin->Render();
+
+	return;
 	ui.ContourChooseButton->setChecked(false);
 
 
@@ -340,17 +412,34 @@ void ImplantDesign::OnCloseContour()
 
 void ImplantDesign::OnContourChoose()
 {
+	connect(ui.ViewWidget, SIGNAL(changeWidgetState()), this, SLOT(OnChangeWidgetState()));
+	pd = vtkSmartPointer<vtkPolyData>::New();
+	
+	//Create a mapper and actor
+	vtkSmartPointer<vtkPolyDataMapper> mapper =
+		vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputData(pd);
+
+	vtkSmartPointer<vtkActor> actor =
+		vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+	actor->GetProperty()->SetInterpolationToFlat();
+
+	m_Renderer->AddActor(actor);
+
 	m_ChooseContourWidget = vtkSmartPointer<vtkContourWidget>::New();
 	m_ChooseContourWidget->SetInteractor(m_Interactor);
 	m_ChooseContourWidget->GetEventTranslator()->RemoveTranslation(vtkCommand::RightButtonPressEvent);
 
 	m_ChooseContourWidgetRep = vtkSmartPointer<vtkOrientedGlyphContourRepresentation>::New();
-	m_ContourPointPlacer = vtkSmartPointer<vtkFocalPlanePointPlacer>::New();
+	m_ContourPointPlacer = vtkSmartPointer<vtkPolygonalSurfacePointPlacer>::New();
+	m_ContourPointPlacer->AddProp(m_ModelList.first()->m_actor);
+	m_ContourPointPlacer->GetPolys()->AddItem(pd);
+	
 	m_ChooseContourWidgetRep->SetPointPlacer(m_ContourPointPlacer);
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetLineWidth(3.0);
 	m_ChooseContourWidgetRep->GetLinesProperty()->SetColor(0.1, 0.3, 0.7);
 	m_ChooseContourWidgetRep->SetLineInterpolator(m_LineInterpolateor);
-
 	m_ChooseContourWidget->SetRepresentation(m_ChooseContourWidgetRep);
 
 	if (ui.ContourChooseButton->isChecked())
@@ -392,12 +481,10 @@ void ImplantDesign::OnOpenProject()
 		stlReader->SetFileName(fileName.toLocal8Bit());
 		stlReader->Update();
 		
-		auto polydatanormal = vtkSmartPointer<vtkPolyDataNormals>::New();
-		polydatanormal->SetInputData(stlReader->GetOutput());
-		polydatanormal->SetComputeCellNormals(1);
-		polydatanormal->Update();
+		m_PointLocator->SetDataSet(stlReader->GetOutput());
+		m_PointLocator->BuildLocator();
 		ModelControlWidgetItem* item = new ModelControlWidgetItem(this, m_Renderer);
-		item->SetInputData(polydatanormal->GetOutput());
+		item->SetInputData(stlReader->GetOutput());
 		m_ModelList.append(item);
 		ui.ModelTableWidget->setRowCount(m_ModelList.size());
 		ui.ModelTableWidget->setCellWidget(m_ModelList.size() - 1, 0, item);
@@ -413,5 +500,205 @@ void ImplantDesign::OnOpenProject()
 void ImplantDesign::OnSingleChoose()
 {
 
+}
+
+void ImplantDesign::OnChangeWidgetState()
+{
+	if (m_ChooseContourWidget->GetWidgetState() == vtkContourWidget::Define)
+	{
+		m_ChooseContourWidget->SetWidgetState(vtkContourWidget::Manipulate);
+		m_EventConnctor->Disconnect(m_ChooseContourWidget->GetInteractor(), vtkCommand::RightButtonPressEvent, this, SLOT(OnCloseContour()));
+	}
+	else
+	{
+		m_ChooseContourWidget->SetWidgetState(vtkContourWidget::Define);
+		m_EventConnctor->Connect(m_ChooseContourWidget->GetInteractor(), vtkCommand::RightButtonPressEvent, this, SLOT(OnCloseContour()));
+	}
+}
+
+void ImplantDesign::SoftBoundary(vtkPolyData* input, vtkPolyData* output)
+{
+	auto inputpd = vtkSmartPointer<vtkPolyData>::New();
+	inputpd = input;
+
+	vtkSmartPointer<vtkImplicitModeller> implicitModeller =
+		vtkSmartPointer<vtkImplicitModeller>::New();
+	implicitModeller->SetSampleDimensions(50, 50, 50);
+	implicitModeller->SetInputData(inputpd);
+	implicitModeller->SetAdjustBounds(1);
+	implicitModeller->SetAdjustDistance(.1);
+	implicitModeller->SetMaximumDistance(2 + 1);
+	implicitModeller->SetProcessModeToPerVoxel();
+	implicitModeller->SetCapping(1);
+	implicitModeller->SetCapValue(2 + 1);
+	implicitModeller->Update();
+
+	// Create the 0 isosurface
+	vtkSmartPointer<vtkContourFilter> contourFilter =
+		vtkSmartPointer<vtkContourFilter>::New();
+	contourFilter->SetInputConnection(implicitModeller->GetOutputPort());
+	contourFilter->SetValue(0, 2);
+	contourFilter->Update();
+
+	vtkSmartPointer<vtkPolyDataConnectivityFilter> connectivityFilter =
+		vtkSmartPointer<vtkPolyDataConnectivityFilter>::New();
+	connectivityFilter->SetInputConnection(contourFilter->GetOutputPort());
+	connectivityFilter->SetExtractionModeToLargestRegion();
+	connectivityFilter->Update();
+
+	if (!connectivityFilter->GetOutput()->GetNumberOfPoints())
+	{
+		return ;
+	}
+
+	vtkSmartPointer<vtkTriangleFilter> TriangleFilter =
+		vtkSmartPointer<vtkTriangleFilter>::New();
+	TriangleFilter->SetInputConnection(connectivityFilter->GetOutputPort());
+	TriangleFilter->Update();
+
+	int numberOfSubdivisions = 2;
+	vtkSmartPointer<vtkLoopSubdivisionFilter> subdivisionFilter =
+		vtkSmartPointer<vtkLoopSubdivisionFilter>::New();
+	subdivisionFilter->SetNumberOfSubdivisions(numberOfSubdivisions);
+	subdivisionFilter->SetInputConnection(TriangleFilter->GetOutputPort());
+	subdivisionFilter->Update();
+
+	vtkSmartPointer<vtkSmoothPolyDataFilter> smoothFilter =
+		vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
+	smoothFilter->SetInputConnection(subdivisionFilter->GetOutputPort());
+	smoothFilter->SetNumberOfIterations(50);
+	smoothFilter->SetRelaxationFactor(.1);    //small relaxation factors and large numbers of iterations are more stable
+	smoothFilter->BoundarySmoothingOn();
+	smoothFilter->Update();
+	
+
+
+
+
+
+	int operation = 2;
+	auto intersection = vtkSmartPointer<vtkIntersectionPolyDataFilter>::New();
+	intersection->SetInputData(0, m_ModelList.first()->m_data);
+	intersection->SetInputData(1, smoothFilter->GetOutput());
+	intersection->Update();
+
+
+
+	auto distance =vtkSmartPointer<vtkDistancePolyDataFilter>::New();
+	distance->SetInputData(0, intersection->GetOutput(1));
+	distance->SetInputData(1, intersection->GetOutput(2));
+	distance->Update();
+
+
+	auto thresh1 =vtkSmartPointer<vtkThreshold>::New();
+	thresh1->AllScalarsOn();
+	thresh1->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Distance");
+	thresh1->SetInputConnection(distance->GetOutputPort(0));
+	thresh1->ThresholdByUpper(0.0);
+
+	auto thresh2 =vtkSmartPointer<vtkThreshold>::New();
+	thresh2->AllScalarsOn();
+	thresh2->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "Distance");
+	thresh2->SetInputData(distance->GetSecondDistanceOutput());
+	thresh2->ThresholdByUpper(0.0);
+
+
+
+	auto surface1 =vtkSmartPointer<vtkDataSetSurfaceFilter>::New();
+	surface1->SetInputConnection(thresh1->GetOutputPort());
+
+	auto surface2 =vtkSmartPointer<vtkDataSetSurfaceFilter>::New();
+	surface2->SetInputConnection(thresh2->GetOutputPort());
+
+
+	auto reverseSense =vtkSmartPointer<vtkReverseSense>::New();
+	reverseSense->SetInputConnection(surface1->GetOutputPort());
+	reverseSense->ReverseCellsOn();
+	reverseSense->ReverseNormalsOn();
+	
+
+	auto appender =vtkSmartPointer<vtkAppendPolyData>::New();
+	appender->SetInputConnection(surface2->GetOutputPort());
+	appender->AddInputConnection(surface1->GetOutputPort());
+	appender->Update();
+	auto clean = vtkSmartPointer<vtkCleanPolyData>::New();
+	clean->SetInputData(appender->GetOutput());
+	clean->Update();
+	auto connector = vtkSmartPointer<vtkPolyDataConnectivityFilter>::New();
+	connector->SetInputData(clean->GetOutput());
+	connector->SetExtractionModeToLargestRegion();
+	connector->ColorRegionsOn();
+	connector->Update();
+	output->DeepCopy(connector->GetOutput());
+
+
+	return;
+
+	auto featureEdge = vtkSmartPointer<vtkFeatureEdges>::New();
+	featureEdge->SetInputData(inputpd);
+	featureEdge->BoundaryEdgesOn();
+	featureEdge->FeatureEdgesOff();
+	featureEdge->ManifoldEdgesOff();
+	featureEdge->NonManifoldEdgesOff();
+	featureEdge->Update();
+	output->DeepCopy(featureEdge->GetOutput());
+	
+	auto pointLocator = vtkSmartPointer<vtkKdTreePointLocator>::New();
+	pointLocator->SetDataSet(inputpd);
+	pointLocator->BuildLocator();
+
+	auto boundarypd = vtkSmartPointer<vtkPolyData>::New();
+	boundarypd = featureEdge->GetOutput();
+	
+	auto boundarypts = vtkSmartPointer<vtkPoints>::New();
+	boundarypts = boundarypd->GetPoints();
+	int numofpts = boundarypts->GetNumberOfPoints();
+	QList<vtkIdType> idList;
+	for (int i = 0; i < numofpts;i++)
+	{
+		vtkIdType id=pointLocator->FindClosestPoint(boundarypts->GetPoint(i));
+		idList.append(id);
+	}
+
+	auto reducedpd = vtkSmartPointer<vtkPolyData>::New();
+
+	auto reducedpts = vtkSmartPointer<vtkPoints>::New();
+	reducedpts->Initialize();
+
+	int numofline = 0;
+	auto cellArray = vtkSmartPointer<vtkCellArray>::New();
+	cellArray->Initialize();
+	auto cell = vtkSmartPointer<vtkIdList>::New();
+	for (int i = 0; i < numofpts+5;i=i+5)
+	{
+		double pt[3];
+		if (i>numofpts)
+		{
+			boundarypts->GetPoint(0, pt);
+		}
+		else
+		{
+			boundarypts->GetPoint(i, pt);
+		}cell->InsertNextId(numofline);
+		numofline++;
+	}
+	cellArray->InsertNextCell(cell);
+	reducedpd->SetPoints(reducedpts);
+	reducedpd->SetPolys(cellArray);
+
+	auto cardinalSpline = vtkSmartPointer<vtkCardinalSpline>::New();
+	cardinalSpline->SetLeftConstraint(2);
+	cardinalSpline->SetRightConstraint(2);
+	cardinalSpline->SetLeftValue(0);
+	cardinalSpline->SetRightValue(0);
+
+	auto spline = vtkSmartPointer<vtkSplineFilter>::New();
+	spline->SetSpline(cardinalSpline);
+	spline->SetInputData(reducedpd);
+	spline->SetNumberOfSubdivisions(numofpts*50);
+	spline->SetSubdivideToSpecified();
+	spline->Update();
+	output->DeepCopy(featureEdge->GetOutput());
+	//output = reducedpd;
 }
 

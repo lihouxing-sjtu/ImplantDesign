@@ -26,6 +26,7 @@ signals:
 	void doubleClicked(QCustomVTKWidget*);
 	void rightClicked(QCustomVTKWidget*, double*);
 	void pickCell();
+	void changeWidgetState();
 };
 
 #endif 

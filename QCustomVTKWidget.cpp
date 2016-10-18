@@ -26,6 +26,10 @@ void QCustomVTKWidget::keyReleaseEvent(QKeyEvent* e)
 	{
 		qpressflag = false;
 	}
+	if (e->key()==Qt::Key_Space)
+	{
+		emit changeWidgetState();
+	}
 }
 
 void QCustomVTKWidget::mouseDoubleClickEvent(QMouseEvent* event)
